@@ -1,0 +1,80 @@
+name: Security Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  security-scans:
+    name: Security Scans
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1️⃣ Checkout del código
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2️⃣ Instalar dependencias para generación de PDF
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pandoc texlive
+
+    # 3️⃣ Análisis SAST con CodeQL
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: javascript # Cambia según tu lenguaje
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+    # 4️⃣ Secrets scanning con TruffleHog
+    - name: Run TruffleHog for secrets scanning
+      run: |
+        pip install trufflehog
+        trufflehog filesystem . --json > trufflehog-results.json
+
+    # 5️⃣ Análisis DAST con OWASP ZAP
+    - name: Run OWASP ZAP Baseline Scan
+      uses: zaproxy/action-baseline@v0.7.0
+      with:
+        target: 'http://localhost:3000' # Cambia a la URL de tu app
+        docker_name: 'owasp/zap2docker-stable'
+        cmd_options: '-quick -quiet'
+      continue-on-error: true # No falla el pipeline si encuentra vulnerabilidades
+
+    # 6️⃣ Generar un PDF consolidando los resultados
+    - name: Generate PDF report
+      run: |
+        echo "# Security Scan Report" > report.md
+        echo "Generated on $(date)" >> report.md
+        echo " " >> report.md
+
+        echo "## CodeQL Analysis" >> report.md
+        if [ -f codeql/codeql-results.sarif ]; then
+          cat codeql/codeql-results.sarif >> report.md
+        else
+          echo "No CodeQL results found." >> report.md
+        fi
+
+        echo "## Secrets Scan (TruffleHog)" >> report.md
+        cat trufflehog-results.json >> report.md
+
+        echo "## DAST (OWASP ZAP)" >> report.md
+        if [ -f owasp-zap-report.html ]; then
+          echo "(See attached ZAP HTML report)" >> report.md
+        else
+          echo "No ZAP report generated." >> report.md
+        fi
+
+        pandoc report.md -o security-scan-report.pdf
+
+    # 7️⃣ Subir el PDF como artifact
+    - name: Upload Security Scan PDF
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-scan-report
+        path: security-scan-report.pdf
