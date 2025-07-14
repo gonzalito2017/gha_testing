@@ -22,14 +22,19 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y pandoc texlive
 
-    # 3️⃣ Análisis SAST con CodeQL
+    # 3️⃣ Análisis SAST con CodeQL (v3)
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
-        languages: python # Cambia según tu lenguaje
+        languages: python # Cambia a python, java, etc. según tu proyecto
+
+    - name: Autobuild project
+      uses: github/codeql-action/autobuild@v3
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:javascript" # Ajusta al lenguaje de tu proyecto
 
     # 4️⃣ Secrets scanning con TruffleHog
     - name: Run TruffleHog for secrets scanning
@@ -54,8 +59,8 @@ jobs:
         echo " " >> report.md
 
         echo "## CodeQL Analysis" >> report.md
-        if [ -f codeql/codeql-results.sarif ]; then
-          cat codeql/codeql-results.sarif >> report.md
+        if [ -f codeql-results.sarif ]; then
+          cat codeql-results.sarif >> report.md
         else
           echo "No CodeQL results found." >> report.md
         fi
