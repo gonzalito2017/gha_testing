@@ -83,6 +83,12 @@ jobs:
 
 
     # 6️⃣ Generar un PDF consolidando los resultados
+    - name: Install LaTeX
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y texlive-latex-recommended texlive-xetex texlive-fonts-recommended lmodern
+
+
     - name: Generate PDF report
       run: |
         echo "# Security Scan Report" > report.md
