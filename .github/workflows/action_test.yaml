@@ -91,22 +91,33 @@ jobs:
 
         echo "## CodeQL Analysis" >> report.md
         if [ -f codeql-results.sarif ]; then
+          echo '```json' >> report.md
           cat codeql-results.sarif >> report.md
+          echo '```' >> report.md
         else
           echo "No CodeQL results found." >> report.md
         fi
 
         echo "## trufflehog" >> report.md
         if [ -f trufflehog-results.json ]; then
+          echo '```json' >> report.md
           cat trufflehog-results.json >> report.md
+          echo '```' >> report.md
         else
           echo "No secrets detected." >> report.md
         fi 
 
         echo "## Bandit Results" >> report.md
+        echo '```json' >> report.md
         cat bandit-report.json >> report.md
+        echo '```' >> report.mds
 
-        pandoc report.md -o security-scan-report.pdf
+        # Escapar caracteres conflictivos
+        sed -i 's/“/"/g; s/”/"/g; s/\\/\\\\/g; s/{/\\{/g; s/}/\\}/g' report.md
+
+        # Generar PDF con xelatex
+        pandoc report.md -o security-scan-report.pdf --pdf-engine=xelatex
+
 
     # ==========================================================
     # ✅ Upload results as artifacts
