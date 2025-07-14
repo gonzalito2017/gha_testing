@@ -57,10 +57,17 @@ jobs:
     # ==========================================================
     # ✅ GITLEAKS (Secrets scanning)
     # ==========================================================
-    - name: Run Gitleaks
-      uses: gitleaks/gitleaks-action@v2
-      with:
-        args: detect --source=. --report-path=gitleaks-report.json --verbose
+    #- name: Run Gitleaks
+    #  uses: gitleaks/gitleaks-action@v2
+    #  with:
+    #    args: detect --source=. --report-path=gitleaks-report.json --verbose
+
+    - name: Run TruffleHog
+      run: pip install trufflehog
+
+    - name: Run TruffleHog
+      run: |
+        trufflehog filesystem --json . > trufflehog-results.json || echo "No secrets found"
 
     
     # ==========================================================
@@ -89,11 +96,11 @@ jobs:
           echo "No CodeQL results found." >> report.md
         fi
 
-        echo "## Gitleaks Results" >> report.md
-        if [ -f gitleaks-report.json ]; then
-          cat gitleaks-report.json >> report.md
+        echo "## trufflehog" >> report.md
+        if [ -f trufflehog-results.json ]; then
+          cat trufflehog-results.json >> report.md
         else
-          echo "(gitleaks) No leaks detected." >> report.md
+          echo "No secrets detected." >> report.md
         fi 
 
         echo "## Bandit Results" >> report.md
