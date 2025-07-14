@@ -41,12 +41,14 @@ jobs:
       uses: github/codeql-action/analyze@v3
       with:
         category: "/language:python" # Ajusta al lenguaje de tu proyecto
+        
 
-    # 4️⃣ Secrets scanning con TruffleHog
-    - name: Run TruffleHog for secrets scanning
-      run: |
-        pip install trufflehog
-        trufflehog filesystem --json . > trufflehog-results.json
+    # 4️⃣ Secrets scanning con Gitleaks
+    - name: Run Gitleaks
+      uses: gitleaks/gitleaks-action@v2
+      with:
+        args: detect --source=. --report-path=gitleaks-report.json --verbose
+
 
     # 5️⃣ Análisis DAST con OWASP ZAP
     - name: Run OWASP ZAP Baseline Scan
@@ -71,8 +73,8 @@ jobs:
           echo "No CodeQL results found." >> report.md
         fi
 
-        echo "## Secrets Scan (TruffleHog)" >> report.md
-        cat trufflehog-results.json >> report.md
+        echo "## Secrets Scan (gitleaks)" >> report.md
+        cat gitleaks-report.json >> report.md
 
         echo "## DAST (OWASP ZAP)" >> report.md
         if [ -f owasp-zap-report.html ]; then
